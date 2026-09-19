@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recipe Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bark:#211a14;
+    --surface:#2c2419;
+    --surface-2:#38301f;
+    --parchment:#ede1c8;
+    --parchment-dim:#b8ab8d;
+    --brick:#b5502e;
+    --brick-bright:#d1673f;
+    --herb:#8a9a63;
+    --line:#4a4030;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bark);
+    color:var(--parchment);
+    font-family:'Work Sans',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  h1,h2,h3,.serif{font-family:'Source Serif 4',Georgia,serif;}
+  a{color:var(--brick-bright);}
+  button, input, textarea, select{font-family:inherit;font-size:inherit;color:inherit;}
+  button{cursor:pointer;}
+  .btn{
+    background:var(--brick);
+    border:none;
+    color:#fff8ef;
+    padding:0.7em 1.2em;
+    border-radius:var(--radius);
+    font-weight:600;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--brick-bright);}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn.ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--parchment);
+  }
+  .btn.ghost:hover{border-color:var(--parchment-dim);}
+  .btn.small{padding:0.45em 0.8em;font-size:0.85em;}
+  .btn.danger{background:transparent;border:1px solid var(--brick);color:var(--brick-bright);}
+  input[type=text], input[type=email], input[type=password], input[type=url], textarea{
+    width:100%;
+    background:var(--bark);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:0.65em 0.8em;
+    color:var(--parchment);
+  }
+  input:focus, textarea:focus, button:focus-visible{
+    outline:2px solid var(--brick-bright);
+    outline-offset:1px;
+  }
+  textarea{min-height:7em;resize:vertical;}
+  label{display:block;font-size:0.85em;color:var(--parchment-dim);margin:0.9em 0 0.3em;}
+  .wrap{max-width:640px;margin:0 auto;padding:1.1em 1.1em 4em;}
+  header.top{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:1.3em 0 0.6em;
+  }
+  header.top h1{font-size:1.5em;margin:0;font-weight:600;letter-spacing:.01em;}
+  header.top h1 span{color:var(--brick-bright);}
+  .top-actions{display:flex;gap:0.5em;}
+  .icon-btn{background:none;border:none;color:var(--parchment-dim);padding:0.3em;font-size:1.1em;}
+  .icon-btn:hover{color:var(--parchment);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:1.1em;
+    margin-bottom:0.9em;
+  }
+  .recipe-row{
+    display:flex;justify-content:space-between;align-items:center;gap:0.8em;
+    cursor:pointer;
+  }
+  .recipe-row h3{margin:0 0 0.2em;font-size:1.15em;}
+  .tags{display:flex;flex-wrap:wrap;gap:0.35em;margin-top:0.3em;}
+  .tag{
+    font-size:0.78em;color:var(--herb);border:1px solid var(--herb);
+    padding:0.1em 0.55em;border-radius:99px;
+  }
+  .meta{font-size:0.8em;color:var(--parchment-dim);}
+  .shared-dot{width:7px;height:7px;border-radius:50%;background:var(--herb);display:inline-block;margin-right:0.4em;}
+  .chevron{color:var(--parchment-dim);font-size:1.3em;}
+
+  .empty{
+    text-align:center;color:var(--parchment-dim);padding:3em 1em;
+  }
+  .empty .serif{font-size:1.3em;color:var(--parchment);display:block;margin-bottom:0.3em;}
+
+  .segmented{display:flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:0.8em;}
+  .segmented button{
+    flex:1;background:var(--surface);border:none;padding:0.6em;color:var(--parchment-dim);
+    border-right:1px solid var(--line);
+  }
+  .segmented button:last-child{border-right:none;}
+  .segmented button.active{background:var(--surface-2);color:var(--parchment);}
+
+  .status-line{
+    font-size:0.85em;color:var(--parchment-dim);margin-top:0.6em;min-height:1.2em;
+  }
+  .status-line.error{color:var(--brick-bright);}
+  .status-line.ok{color:var(--herb);}
+
+  .ingredient-row, .step-row{
+    display:flex;gap:0.5em;margin-bottom:0.4em;align-items:flex-start;
+  }
+  .ingredient-row input:first-child{width:5.5em;flex:none;}
+  .ingredient-row input:nth-child(2){width:4em;flex:none;}
+  .step-row .num{width:1.6em;flex:none;color:var(--parchment-dim);padding-top:0.6em;text-align:right;}
+  .remove-x{background:none;border:none;color:var(--parchment-dim);font-size:1.1em;padding:0.3em;flex:none;}
+  .remove-x:hover{color:var(--brick-bright);}
+
+  .detail-ingredients ul{list-style:none;padding:0;margin:0;}
+  .detail-ingredients li{
+    padding:0.5em 0;border-bottom:1px solid var(--line);display:flex;gap:0.6em;
+  }
+  .detail-ingredients li:last-child{border-bottom:none;}
+  .detail-ingredients .amt{color:var(--brick-bright);min-width:5.5em;font-variant-numeric:tabular-nums;}
+  .detail-steps ol{padding-left:1.3em;margin:0;}
+  .detail-steps li{margin-bottom:0.9em;}
+
+  .row{display:flex;gap:0.6em;}
+  .row > *{flex:1;}
+  .hidden{display:none !important;}
+  .back-link{color:var(--parchment-dim);font-size:0.9em;display:inline-block;margin-bottom:1em;}
+  .divider{border:none;border-top:1px solid var(--line);margin:1.4em 0;}
+
+  .photo-preview{max-width:100%;border-radius:var(--radius);margin-top:0.6em;display:block;}
+  .queue-item{display:flex;justify-content:space-between;align-items:center;gap:0.6em;}
+
+  @media print{
+    body{background:#fff;color:#111;}
+    header.top, .no-print, .segmented, footer{display:none !important;}
+    .card{border:none;box-shadow:none;padding:0;}
+    .detail-ingredients .amt{color:#111;}
+    a{color:#111;text-decoration:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------------- CONFIG ---------------- */
+// Fill these in after creating your Supabase project (Settings > API).
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const PARSE_PROMPT = `You extract recipes into strict JSON. Given raw recipe text (or a description of a photo), return ONLY a JSON object, no prose, no markdown fences, matching exactly:
+{
+  "title": string,
+  "servings": string,
+  "tags": string[],
+  "ingredients": [{"amount": string, "unit": string, "item": string}],
+  "instructions": string[]
+}
+Keep amounts and units as written or sensibly normalized (e.g. "2", "cups"). If servings is unknown, use "". If a field is unknown, use an empty string or empty array. Do not invent ingredients or steps that aren't implied by the source.`;
+
+/* ---------------- STATE ---------------- */
+let session = null;
+let recipes = [];
+let view = { name: 'loading' }; // loading | login | list | add | detail | edit | public
+let lmStudioUrl = localStorage.getItem('lmStudioUrl') || 'http://localhost:1234/v1';
+let lmStudioModel = localStorage.getItem('lmStudioModel') || '';
+
+const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
+const publicRecipeId = params.get('r');
+
+/* ---------------- HELPERS ---------------- */
+function h(strings, ...vals){ // tiny tagged-template escape helper for text nodes we build manually
+  return strings.reduce((acc,s,i)=> acc + s + (vals[i]!==undefined? esc(vals[i]) : ''), '');
+}
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function render(){ app.innerHTML = screens[view.name] ? screens[view.name]() : '<p>Unknown view</p>'; bindEvents(); }
+function go(name, extra={}){ view = { name, ...extra }; render(); }
+
+async function loadRecipes(){
+  const { data, error } = await sb.from('recipes').select('*').order('created_at', { ascending:false });
+  if(!error) recipes = data;
+}
+
+/* ---------------- AUTH ---------------- */
+async function init(){
+  const { data:{ session: s } } = await sb.auth.getSession();
+  session = s;
+  sb.auth.onAuthStateChange((_evt, s2)=>{ session = s2; if(view.name==='login'||view.name==='list') boot(); });
+  await boot();
+}
+async function boot(){
+  if(publicRecipeId){
+    go('public');
+    return;
+  }
+  if(!session){ go('login'); return; }
+  await loadRecipes();
+  go('list');
+}
+
+/* ---------------- LM STUDIO ---------------- */
+async function callLMStudio({ text, imageDataUrl }){
+  const content = [];
+  if(text) content.push({ type:'text', text });
+  if(imageDataUrl) content.push({ type:'image_url', image_url:{ url: imageDataUrl } });
+
+  const body = {
+    model: lmStudioModel || undefined,
+    messages: [
+      { role:'system', content: PARSE_PROMPT },
+      { role:'user', content: content.length ? content : text }
+    ],
+    temperature: 0.2
+  };
+  const res = await fetch(lmStudioUrl.replace(/\/$/,'') + '/chat/completions', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('LM Studio returned ' + res.status);
+  const data = await res.json();
+  let raw = data.choices?.[0]?.message?.content || '';
+  raw = raw.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  return JSON.parse(raw);
+}
+
+/* ---------------- SCREENS ---------------- */
+const screens = {
+  loading: () => `<p class="meta">Loading…</p>`,
+
+  login: () => `
+    <header class="top"><h1>Recipe <span>Box</span></h1></header>
+    <div class="card">
+      <h2 class="serif" style="margin-top:0;">Sign in</h2>
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="username">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password">
+      <button class="btn" id="loginBtn" style="margin-top:1em;width:100%;">Sign in</button>
+      <div class="status-line" id="loginStatus"></div>
+    </div>`,
+
+  list: () => {
+    const pending = recipes.filter(r=>!r.parsed);
+    const ready = recipes.filter(r=>r.parsed);
+    return `
+    <header class="top">
+      <h1>Recipe <span>Box</span></h1>
+      <div class="top-actions">
+        <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+        <button class="icon-btn" id="logoutBtn" title="Sign out">⏻</button>
+      </div>
+    </header>
+    <button class="btn" id="addBtn" style="width:100%;margin-bottom:1em;">+ Add a recipe</button>
+    ${pending.length ? `
+      <h3 class="serif" style="font-size:1em;color:var(--parchment-dim);margin:1.2em 0 0.5em;">To parse (${pending.length})</h3>
+      ${pending.map(r=>`
+        <div class="card queue-item">
+          <span class="meta">${esc(r.source_type)} · saved ${new Date(r.created_at).toLocaleDateString()}</span>
+          <button class="btn small" data-parse-pending="${r.id}">Parse now</button>
+        </div>`).join('')}
+    ` : ''}
+    <h3 class="serif" style="font-size:1em;color:var(--parchment-dim);margin:1.2em 0 0.5em;">Recipes (${ready.length})</h3>
+    ${ready.length ? ready.map(r=>`
+      <div class="card recipe-row" data-open="${r.id}">
+        <div>
+          <h3 class="serif">${esc(r.title)||'Untitled'}</h3>
+          <div class="tags">${(r.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+        </div>
+        <div style="text-align:right;">
+          ${r.shared? '<span class="shared-dot" title="Shared"></span>' : ''}
+          <span class="chevron">›</span>
+        </div>
+      </div>`).join('') : `<div class="empty"><span class="serif">Nothing here yet</span>Add your first recipe — paste text, a link, or a photo.</div>`}
+    `;
+  },
+
+  add: () => `
+    <a class="back-link" id="backBtn">‹ Back</a>
+    <h2 class="serif" style="margin-top:0;">Add a recipe</h2>
+    <div class="segmented">
+      <button data-mode="text" class="${view.mode!=='photo'?'active':''}">Text or link</button>
+      <button data-mode="photo" class="${view.mode==='photo'?'active':''}">Photo</button>
+    </div>
+    ${view.mode==='photo' ? `
+      <input type="file" accept="image/*" capture="environment" id="photoInput">
+      <img id="photoPreview" class="photo-preview hidden">
+    ` : `
+      <textarea id="rawText" placeholder="Paste the recipe text, or a link to it…"></textarea>
+    `}
+    <div class="row" style="margin-top:0.9em;">
+      <button class="btn" id="parseBtn">Parse with LM Studio</button>
+      <button class="btn ghost" id="saveLaterBtn">Save for later</button>
+    </div>
+    <div class="status-line" id="addStatus"></div>
+  `,
+
+  review: () => reviewForm(view.draft, { mode:'add' }),
+  edit: () => reviewForm(view.draft, { mode:'edit', id: view.id }),
+
+  detail: () => {
+    const r = recipes.find(x=>x.id===view.id);
+    if(!r) return `<p>Not found.</p>`;
+    return `
+    <a class="back-link" id="backBtn">‹ Back</a>
+    <h2 class="serif" style="margin-top:0;">${esc(r.title)||'Untitled'}</h2>
+    <div class="tags" style="margin-bottom:0.8em;">${(r.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+    ${r.servings ? `<p class="meta">Serves ${esc(r.servings)}</p>` : ''}
+    <div class="card detail-ingredients">
+      <h3 class="serif" style="margin-top:0;font-size:1.05em;">Ingredients</h3>
+      <ul>${(r.ingredients||[]).map(i=>`<li><span class="amt">${esc(i.amount)} ${esc(i.unit)}</span><span>${esc(i.item)}</span></li>`).join('')}</ul>
+    </div>
+    <div class="card detail-steps">
+      <h3 class="serif" style="margin-top:0;font-size:1.05em;">Instructions</h3>
+      <ol>${(r.instructions||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+    </div>
+    <div class="row no-print" style="margin-top:1em;">
+      <button class="btn ghost" id="editBtn">Edit</button>
+      <button class="btn ghost" id="printBtn">Save as PDF</button>
+    </div>
+    <div class="row no-print" style="margin-top:0.6em;">
+      <button class="btn ${r.shared?'':'ghost'}" id="shareToggle">${r.shared? '✓ Shared — copy link' : 'Share this recipe'}</button>
+      <button class="btn danger" id="deleteBtn">Delete</button>
+    </div>
+    <div class="status-line no-print" id="detailStatus"></div>
+    `;
+  },
+
+  public: () => {
+    if(view.error) return `<div class="empty"><span class="serif">Can't find that recipe</span>It may have been unshared or removed.</div>`;
+    const r = view.recipe;
+    if(!r) return `<p class="meta">Loading…</p>`;
+    return `
+    <header class="top"><h1>Recipe <span>Box</span></h1></header>
+    <h2 class="serif" style="margin-top:0;">${esc(r.title)||'Untitled'}</h2>
+    <div class="tags" style="margin-bottom:0.8em;">${(r.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+    ${r.servings ? `<p class="meta">Serves ${esc(r.servings)}</p>` : ''}
+    <div class="card detail-ingredients">
+      <h3 class="serif" style="margin-top:0;font-size:1.05em;">Ingredients</h3>
+      <ul>${(r.ingredients||[]).map(i=>`<li><span class="amt">${esc(i.amount)} ${esc(i.unit)}</span><span>${esc(i.item)}</span></li>`).join('')}</ul>
+    </div>
+    <div class="card detail-steps">
+      <h3 class="serif" style="margin-top:0;font-size:1.05em;">Instructions</h3>
+      <ol>${(r.instructions||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+    </div>
+    <button class="btn ghost no-print" id="printBtn">Save as PDF</button>
+    `;
+  },
+
+  settings: () => `
+    <a class="back-link" id="backBtn">‹ Back</a>
+    <h2 class="serif" style="margin-top:0;">Settings</h2>
+    <label for="lmUrl">LM Studio server URL</label>
+    <input type="text" id="lmUrl" value="${esc(lmStudioUrl)}" placeholder="http://localhost:1234/v1">
+    <p class="meta">Use the computer's local-network address (e.g. http://192.168.1.23:1234/v1) when parsing from your phone, and turn on HTTPS + CORS in LM Studio's server settings.</p>
+    <label for="lmModel">Model name (optional)</label>
+    <input type="text" id="lmModel" value="${esc(lmStudioModel)}" placeholder="leave blank to use whichever is loaded">
+    <button class="btn" id="saveSettingsBtn" style="margin-top:1em;">Save</button>
+    <div class="status-line" id="settingsStatus"></div>
+  `,
+};
+
+function reviewForm(draft, opts){
+  return `
+  <a class="back-link" id="backBtn">‹ Back</a>
+  <h2 class="serif" style="margin-top:0;">${opts.mode==='edit'?'Edit recipe':'Review before saving'}</h2>
+  <label>Title</label>
+  <input type="text" id="f_title" value="${esc(draft.title)}">
+  <label>Serves</label>
+  <input type="text" id="f_servings" value="${esc(draft.servings)}">
+  <label>Tags (comma separated)</label>
+  <input type="text" id="f_tags" value="${esc((draft.tags||[]).join(', '))}">
+
+  <label>Ingredients</label>
+  <div id="ingredientsList">
+    ${(draft.ingredients||[]).map((ing,i)=>`
+      <div class="ingredient-row" data-i="${i}">
+        <input type="text" class="ing-amt" value="${esc(ing.amount)}" placeholder="amt">
+        <input type="text" class="ing-unit" value="${esc(ing.unit)}" placeholder="unit">
+        <input type="text" class="ing-item" value="${esc(ing.item)}" placeholder="ingredient">
+        <button class="remove-x" data-remove-ing="${i}">×</button>
+      </div>`).join('')}
+  </div>
+  <button class="btn ghost small" id="addIngredientBtn">+ ingredient</button>
+
+  <label style="margin-top:1.2em;">Instructions</label>
+  <div id="stepsList">
+    ${(draft.instructions||[]).map((s,i)=>`
+      <div class="step-row" data-i="${i}">
+        <span class="num">${i+1}.</span>
+        <textarea class="step-text" style="min-height:3em;">${esc(s)}</textarea>
+        <button class="remove-x" data-remove-step="${i}">×</button>
+      </div>`).join('')}
+  </div>
+  <button class="btn ghost small" id="addStepBtn">+ step</button>
+
+  <div class="row" style="margin-top:1.4em;">
+    <button class="btn" id="saveDraftBtn">${opts.mode==='edit'?'Save changes':'Save recipe'}</button>
+  </div>
+  <div class="status-line" id="reviewStatus"></div>
+  `;
+}
+
+/* ---------------- EVENTS ---------------- */
+function bindEvents(){
+  // LOGIN
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn) loginBtn.onclick = async ()=>{
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const statusEl = document.getElementById('loginStatus');
+    statusEl.textContent = 'Signing in…'; statusEl.className='status-line';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ statusEl.textContent = error.message; statusEl.className='status-line error'; return; }
+    await loadRecipes(); go('list');
+  };
+
+  // LIST
+  const addBtn = document.getElementById('addBtn');
+  if(addBtn) addBtn.onclick = ()=> go('add', { mode:'text' });
+  const settingsBtn = document.getElementById('settingsBtn');
+  if(settingsBtn) settingsBtn.onclick = ()=> go('settings');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn) logoutBtn.onclick = async ()=>{ await sb.auth.signOut(); go('login'); };
+  document.querySelectorAll('[data-open]').forEach(el=>{
+    el.onclick = ()=> go('detail', { id: el.dataset.open });
+  });
+  document.querySelectorAll('[data-parse-pending]').forEach(el=>{
+    el.onclick = async ()=>{
+      const r = recipes.find(x=>x.id===el.dataset.parsePending);
+      el.disabled = true; el.textContent = 'Parsing…';
+      try{
+        const parsed = await callLMStudio({ text: r.raw_input });
+        go('review', { draft: { ...parsed, ingredients: parsed.ingredients||[], instructions: parsed.instructions||[], tags: parsed.tags||[] }, pendingId: r.id });
+      }catch(e){
+        el.disabled = false; el.textContent = 'Parse now';
+        alert("Couldn't reach LM Studio: " + e.message);
+      }
+    };
+  });
+
+  // ADD
+  document.querySelectorAll('[data-mode]').forEach(el=>{
+    el.onclick = ()=> go('add', { mode: el.dataset.mode });
+  });
+  const backBtn = document.getElementById('backBtn');
+  if(backBtn) backBtn.onclick = ()=> go('list');
+  const photoInput = document.getElementById('photoInput');
+  if(photoInput) photoInput.onchange = ()=>{
+    const file = photoInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      view.imageDataUrl = reader.result;
+      const preview = document.getElementById('photoPreview');
+      preview.src = reader.result; preview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  };
+  const parseBtn = document.getElementById('parseBtn');
+  if(parseBtn) parseBtn.onclick = async ()=>{
+    const statusEl = document.getElementById('addStatus');
+    const text = view.mode==='photo' ? undefined : document.getElementById('rawText').value.trim();
+    const imageDataUrl = view.mode==='photo' ? view.imageDataUrl : undefined;
+    if(view.mode==='photo' && !imageDataUrl){ statusEl.textContent='Choose a photo first.'; statusEl.className='status-line error'; return; }
+    if(view.mode==='text' && !text){ statusEl.textContent='Paste something first.'; statusEl.className='status-line error'; return; }
+    statusEl.textContent = 'Asking LM Studio…'; statusEl.className='status-line';
+    try{
+      const parsed = await callLMStudio({ text: text || 'Extract the recipe from this photo.', imageDataUrl });
+      go('review', { draft: { ...parsed, ingredients: parsed.ingredients||[], instructions: parsed.instructions||[], tags: parsed.tags||[] } });
+    }catch(e){
+      statusEl.textContent = "Couldn't reach LM Studio (" + e.message + "). Save it for later instead?";
+      statusEl.className = 'status-line error';
+    }
+  };
+  const saveLaterBtn = document.getElementById('saveLaterBtn');
+  if(saveLaterBtn) saveLaterBtn.onclick = async ()=>{
+    const text = view.mode==='photo' ? null : document.getElementById('rawText').value.trim();
+    const { error } = await sb.from('recipes').insert({
+      title: '', parsed: false, shared: false,
+      source_type: view.mode==='photo' ? 'photo' : 'text',
+      raw_input: text
+    });
+    if(error){ alert(error.message); return; }
+    await loadRecipes(); go('list');
+  };
+
+  // REVIEW / EDIT
+  const addIngredientBtn = document.getElementById('addIngredientBtn');
+  if(addIngredientBtn) addIngredientBtn.onclick = ()=>{
+    view.draft.ingredients.push({ amount:'', unit:'', item:'' });
+    render();
+  };
+  const addStepBtn = document.getElementById('addStepBtn');
+  if(addStepBtn) addStepBtn.onclick = ()=>{
+    view.draft.instructions.push('');
+    render();
+  };
+  document.querySelectorAll('[data-remove-ing]').forEach(el=>{
+    el.onclick = ()=>{ view.draft.ingredients.splice(+el.dataset.removeIng,1); render(); };
+  });
+  document.querySelectorAll('[data-remove-step]').forEach(el=>{
+    el.onclick = ()=>{ view.draft.instructions.splice(+el.dataset.removeStep,1); render(); };
+  });
+  const saveDraftBtn = document.getElementById('saveDraftBtn');
+  if(saveDraftBtn) saveDraftBtn.onclick = async ()=>{
+    const statusEl = document.getElementById('reviewStatus');
+    const payload = {
+      title: document.getElementById('f_title').value.trim(),
+      servings: document.getElementById('f_servings').value.trim(),
+      tags: document.getElementById('f_tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+      ingredients: [...document.querySelectorAll('.ingredient-row')].map(row=>({
+        amount: row.querySelector('.ing-amt').value.trim(),
+        unit: row.querySelector('.ing-unit').value.trim(),
+        item: row.querySelector('.ing-item').value.trim(),
+      })).filter(i=>i.item),
+      instructions: [...document.querySelectorAll('.step-text')].map(t=>t.value.trim()).filter(Boolean),
+      parsed: true
+    };
+    statusEl.textContent = 'Saving…';
+    let error;
+    if(view.id){
+      ({ error } = await sb.from('recipes').update(payload).eq('id', view.id));
+    } else if(view.pendingId){
+      ({ error } = await sb.from('recipes').update(payload).eq('id', view.pendingId));
+    } else {
+      ({ error } = await sb.from('recipes').insert(payload));
+    }
+    if(error){ statusEl.textContent = error.message; statusEl.className='status-line error'; return; }
+    await loadRecipes(); go('list');
+  };
+
+  // DETAIL
+  const editBtn = document.getElementById('editBtn');
+  if(editBtn) editBtn.onclick = ()=>{
+    const r = recipes.find(x=>x.id===view.id);
+    go('edit', { id: r.id, draft: { title:r.title, servings:r.servings, tags:r.tags||[], ingredients:r.ingredients||[], instructions:r.instructions||[] } });
+  };
+  const printBtn = document.getElementById('printBtn');
+  if(printBtn) printBtn.onclick = ()=> window.print();
+  const shareToggle = document.getElementById('shareToggle');
+  if(shareToggle) shareToggle.onclick = async ()=>{
+    const r = recipes.find(x=>x.id===view.id);
+    if(r.shared){
+      const url = location.origin + location.pathname + '?r=' + r.id;
+      navigator.clipboard?.writeText(url);
+      document.getElementById('detailStatus').textContent = 'Link copied: ' + url;
+      return;
+    }
+    const { error } = await sb.from('recipes').update({ shared:true }).eq('id', r.id);
+    if(!error){ await loadRecipes(); go('detail', { id: r.id }); }
+  };
+  const deleteBtn = document.getElementById('deleteBtn');
+  if(deleteBtn) deleteBtn.onclick = async ()=>{
+    if(!confirm('Delete this recipe?')) return;
+    await sb.from('recipes').delete().eq('id', view.id);
+    await loadRecipes(); go('list');
+  };
+
+  // SETTINGS
+  const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  if(saveSettingsBtn) saveSettingsBtn.onclick = ()=>{
+    lmStudioUrl = document.getElementById('lmUrl').value.trim() || lmStudioUrl;
+    lmStudioModel = document.getElementById('lmModel').value.trim();
+    localStorage.setItem('lmStudioUrl', lmStudioUrl);
+    localStorage.setItem('lmStudioModel', lmStudioModel);
+    document.getElementById('settingsStatus').textContent = 'Saved.';
+    document.getElementById('settingsStatus').className = 'status-line ok';
+  };
+
+  // PUBLIC
+  const pubPrintBtn = document.getElementById('printBtn');
+  if(view.name==='public' && pubPrintBtn) pubPrintBtn.onclick = ()=> window.print();
+}
+
+/* ---------------- PUBLIC VIEW LOAD ---------------- */
+async function loadPublicRecipe(){
+  const { data, error } = await sb.from('recipes').select('*').eq('id', publicRecipeId).eq('shared', true).single();
+  if(error || !data){ view.error = true; render(); return; }
+  view.recipe = data; render();
+}
+
+/* ---------------- BOOT ---------------- */
+init().then(()=>{ if(view.name==='public') loadPublicRecipe(); });
+</script>
+</body>
+</html>
