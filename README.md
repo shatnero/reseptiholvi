@@ -1,4 +1,4 @@
-# Recipe Box
+# Reseptiholvi
 
 A single-file recipe app: paste text, a link, or a photo, parse it into a
 structured recipe with a local LLM via [LM Studio](https://lmstudio.ai), and
